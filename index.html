@@ -9,11 +9,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:#f5f5f7;color:#1d1d1f;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 .page{padding:0 18px 50px}.shell{max-width:920px;margin:auto}
-.brand{height:94px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e4e4e7}
-.brand strong{font-size:20px;color:#0e1b2a}.brand span{font-size:12px;color:#6e6e73}
-.logos{display:flex;align-items:center;gap:15px}.mark{width:50px;height:50px;border-radius:14px;background:#1f3a5f;color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px}
-.ipgs{padding-left:16px;border-left:1px solid #ddd}
-.banner{width:100%;aspect-ratio:8/3;margin-top:24px;border-radius:24px;background:#fff url('/assets/ipgs-header.svg') center/cover no-repeat;box-shadow:0 12px 35px #0e1b2a12}
+.header-art{display:block;width:100%;height:auto;margin-top:24px;border-radius:24px;box-shadow:0 12px 35px #0e1b2a12}
 .hero{padding:42px 2px 36px}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#b89b5e}
 .hero h1{font-size:46px;line-height:1.04;letter-spacing:-1.8px;margin:10px 0 14px;color:#0e1b2a}
 .hero p{max-width:700px;font-size:16px;line-height:1.7;color:#60646c}
@@ -40,8 +36,8 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
 .ref{max-width:480px;margin:22px auto;background:#f7f8fa;border-radius:15px;padding:16px;text-align:left}.ref span{font-size:11px;color:#888;display:block}.ref strong{display:block;margin:3px 0 11px}
 .footer{text-align:center;color:#898c92;font-size:11px;line-height:1.7;padding:30px 0}.status{margin-top:16px;padding:12px;border-radius:10px;background:#fff3f3;color:#9a3030;font-size:12px}
 @media(max-width:700px){
- .page{padding:0 14px 40px}.brand{height:78px}.mark{width:42px;height:42px;font-size:16px}.brand strong{font-size:16px}.brand span{font-size:10px}
- .banner{margin-top:18px;border-radius:18px}.hero{padding:32px 2px 29px}.hero h1{font-size:36px}.hero p{font-size:14px}.progress span{display:none}
+ .page{padding:0 14px 40px}
+ .header-art{margin-top:14px;border-radius:18px}.hero{padding:32px 2px 29px}.hero h1{font-size:36px}.hero p{font-size:14px}.progress span{display:none}
  .grid,.methods,.paygrid{grid-template-columns:1fr}.span{grid-column:auto}.head{padding:23px 20px 18px}.body{padding:22px 20px 25px}
  .actions{align-items:stretch;flex-direction:column}.actions .btn{width:100%}.micro{order:2}.row{grid-template-columns:105px 1fr}
 }
@@ -49,11 +45,7 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
 </head>
 <body>
 <div class="page"><main class="shell">
-<div class="brand">
-  <div class="logos"><div class="mark">IUC</div><div><strong>Innovative University College</strong><br><span>Postgraduate Registration</span></div></div>
-  <div class="ipgs"><strong>IPGS</strong><br><span>Institute of Postgraduate Studies</span></div>
-</div>
-<div class="banner" role="img" aria-label="Innovative University College and Institute of Postgraduate Studies"></div>
+<img class="header-art" src="https://raw.githubusercontent.com/adiybukhori/ipgs-briefing-registration/main/assets/ipgs-header.svg?v=20260916-2" alt="Innovative University College and Institute of Postgraduate Studies — Postgraduate Briefing Registration">
 
 <section class="hero">
   <div class="eyebrow">Postgraduate Briefing Registration</div>
