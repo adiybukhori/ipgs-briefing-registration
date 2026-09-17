@@ -66,7 +66,7 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
 <form id="form">
 <div class="grid">
   <div class="span"><label>Full Name as per IC / Passport <span class="req">*</span></label><input id="name" required></div>
-  <div><label>IC / Passport Number <span class="req">*</span></label><input id="ic" required></div>
+  <div><label><span id="idLabelText">IC / Passport Number</span> <span class="req">*</span></label><input id="ic" required placeholder="IC / Passport Number"></div>
   <div><label>WhatsApp Number <span class="req">*</span></label><input id="phone" required type="tel"></div>
   <div class="span"><label>Email Address <span class="req">*</span></label><input id="email" required type="email"></div>
   <div class="span"><label>Full Address <span class="req">*</span></label><textarea id="address" required></textarea></div>
@@ -159,14 +159,17 @@ function meta(){
     utmCampaign:q.get('utm_campaign')||''
   };
 }
-function syncCountryField(){
-  const isInternational=$('applicantType').value==='International';
+function syncApplicantFields(){
+  const type=$('applicantType').value;
+  const isInternational=type==='International';
   $('countryWrap').classList.toggle('hidden',!isInternational);
   $('country').required=isInternational;
   if(!isInternational)$('country').value='';
+  $('idLabelText').textContent=isInternational?'Passport Number':type==='Local'?'IC Number':'IC / Passport Number';
+  $('ic').placeholder=isInternational?'Enter passport number':type==='Local'?'Enter IC number':'IC / Passport Number';
 }
-$('applicantType').addEventListener('change',syncCountryField);
-syncCountryField();
+$('applicantType').addEventListener('change',syncApplicantFields);
+syncApplicantFields();
 $('form').onsubmit=e=>{
   e.preventDefault();
   if(!e.target.reportValidity())return;
