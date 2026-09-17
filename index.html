@@ -70,6 +70,14 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
   <div><label>WhatsApp Number <span class="req">*</span></label><input id="phone" required type="tel"></div>
   <div class="span"><label>Email Address <span class="req">*</span></label><input id="email" required type="email"></div>
   <div class="span"><label>Full Address <span class="req">*</span></label><textarea id="address" required></textarea></div>
+  <div><label>Applicant Type <span class="req">*</span></label>
+    <select id="applicantType" required>
+      <option value="">Select applicant type</option>
+      <option value="Local">Local (Malaysia)</option>
+      <option value="International">International</option>
+    </select>
+  </div>
+  <div id="countryWrap" class="hidden"><label>Country of Citizenship <span class="req">*</span></label><input id="country" placeholder="e.g. Indonesia"></div>
   <div class="span"><label>Programme <span class="req">*</span></label>
     <select id="programme" required>
       <option value="">Select programme</option>
@@ -151,6 +159,14 @@ function meta(){
     utmCampaign:q.get('utm_campaign')||''
   };
 }
+function syncCountryField(){
+  const isInternational=$('applicantType').value==='International';
+  $('countryWrap').classList.toggle('hidden',!isInternational);
+  $('country').required=isInternational;
+  if(!isInternational)$('country').value='';
+}
+$('applicantType').addEventListener('change',syncCountryField);
+syncCountryField();
 $('form').onsubmit=e=>{
   e.preventDefault();
   if(!e.target.reportValidity())return;
@@ -159,6 +175,8 @@ $('form').onsubmit=e=>{
   state.whatsapp=$('phone').value.trim();
   state.email=$('email').value.trim();
   state.fullAddress=$('address').value.trim();
+  state.applicantType=$('applicantType').value;
+  state.country=state.applicantType==='International' ? $('country').value.trim() : 'Malaysia';
   state.programme=$('programme').value;
   state.intake=$('intake').value;
   state.paymentMethod=document.querySelector('input[name=method]:checked').value;
