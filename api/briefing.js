@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7HwRJoOIlmND2knf8xepPmfwF_ZthVVEiKZcwQuPyGrhjRz1xUhrRSRQrPJ-TOw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8Gw3rJlPqWXeqK2rRlTBM4AOKEi1MWAzc8p7OiGE7uBdT3fhJqTur5WoerbnolBE/exec';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -21,8 +21,6 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const receipt = body.receipt || {};
 
-    // The live Apps Script COL automation uses the legacy flat field names below.
-    // Normalize the current briefing form payload so both systems stay compatible.
     const payload = {
       action: 'complete',
       fullName: body.fullName || '',
