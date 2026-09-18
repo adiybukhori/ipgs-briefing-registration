@@ -31,7 +31,7 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
 .btn{border:0;border-radius:12px;padding:13px 18px;font-weight:750;cursor:pointer;font-size:14px}.btn:disabled{opacity:.55;cursor:not-allowed}.primary{background:#0071e3;color:#fff}.primary:hover{background:#005bb5}.ghost{background:#f2f3f5;color:#263445}
 .hidden{display:none!important}.paygrid{display:grid;grid-template-columns:1.4fr .8fr;gap:20px}.paybox,.qrcard{border:1px solid #e3e4e6;border-radius:18px;padding:18px}
 .row{display:grid;grid-template-columns:125px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #eee}.row:last-child{border:0}.row span{font-size:12px;color:#777}.row strong{font-size:13px}
-.qrcard{text-align:center;background:#fafafa}.qrcard p{font-size:11px;color:#777;line-height:1.5}.upload{margin-top:20px;border:1.5px dashed #c9cbd0;border-radius:18px;padding:28px;text-align:center;background:#fbfbfc}.upload input{border:0;padding:0}
+.qrcard{text-align:center;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center}.qrcard p{font-size:11px;color:#777;line-height:1.5;margin:10px 0 0}.qrcard img{display:block;width:min(220px,100%);height:auto;margin:14px auto 4px;background:#fff;border-radius:12px}.upload{margin-top:20px;border:1.5px dashed #c9cbd0;border-radius:18px;padding:28px;text-align:center;background:#fbfbfc}.upload input{border:0;padding:0}
 .success{text-align:center;padding:30px 5px}.check{width:58px;height:58px;border-radius:50%;background:#f4efe4;color:#9a7b3c;display:grid;place-items:center;font-size:28px;margin:0 auto 15px}.success h2{font-size:28px}.success p{color:#686b70;line-height:1.6}
 .ref{max-width:480px;margin:22px auto;background:#f7f8fa;border-radius:15px;padding:16px;text-align:left}.ref span{font-size:11px;color:#888;display:block}.ref strong{display:block;margin:3px 0 11px}
 .footer{text-align:center;color:#898c92;font-size:11px;line-height:1.7;padding:30px 0}.status{margin-top:16px;padding:12px;border-radius:10px;background:#fff3f3;color:#9a3030;font-size:12px}
@@ -118,10 +118,11 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
     <div class="row"><span>Bank Name</span><strong>PUBLIC BANK</strong></div>
     <div class="row"><span>Account Name</span><strong>KOLEJ ANTARABANGSA INOVATIF SDN BHD</strong></div>
     <div class="row"><span>Account Number</span><strong>3150 9890 34</strong></div>
+    <div class="row"><span>SWIFT Code <small style="display:block;color:#999;font-weight:500;margin-top:2px">International transfer</small></span><strong>PBBEMYKL</strong></div>
     <div class="row"><span>Reference 1</span><strong id="ric">-</strong></div>
     <div class="row"><span>Reference 2</span><strong id="rphone">-</strong></div>
   </div><div class="note"><strong>Important:</strong> All registration payments are non-refundable.</div></div>
-  <div class="qrcard"><strong>Payment QR</strong><p>Please use the official payment QR provided during the briefing, or make payment using the bank account details shown here.</p></div>
+  <div class="qrcard"><strong>Payment QR</strong><img src="/assets/payment-qr.svg?v=20260918-1" alt="Official payment QR code"><p>Scan this QR to make payment. For international bank transfers, use SWIFT code <strong>PBBEMYKL</strong>.</p></div>
 </div>
 <div class="upload"><h3>Upload payment receipt</h3><p>JPG, PNG, WEBP or PDF · maximum 3 MB</p><input type="file" id="receipt" accept="image/jpeg,image/png,image/webp,application/pdf" required></div>
 <div id="err" class="status hidden"></div>
