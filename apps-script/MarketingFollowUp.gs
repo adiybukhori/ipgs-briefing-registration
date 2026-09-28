@@ -9,14 +9,17 @@ const MKT_FOLLOWUP_CONFIG = {
   timeZone: 'Asia/Kuala_Lumpur',
   businessHourStart: 9,
   businessHourEnd: 18,
-  reminderDays: [1, 3, 7]
+  reminderScheduleHours: [12, 24, 72, 120, 168],
+  reminderHeaders: [
+    'Reminder 12H Sent At',
+    'Reminder 24H Sent At',
+    'Reminder Day 3 Sent At',
+    'Reminder Day 5 Sent At',
+    'Reminder Day 7 Sent At'
+  ]
 };
 
-/**
- * Marketing-only admission follow-up.
- * This does not update or depend on the ACC UI/workflow.
- * It reads Official Admission Form V2 only to verify whether the applicant submitted the form.
- */
+/** Marketing-only follow-up. ACC is not updated or used for this workflow. */
 function marketingSyncAdmissionFormStatus() {
   const cfg = MKT_FOLLOWUP_CONFIG;
   const ss = SpreadsheetApp.openById(cfg.briefingSpreadsheetId);
@@ -32,8 +35,8 @@ function marketingSyncAdmissionFormStatus() {
   const required = [
     'Timestamp','Registration Reference','Full Name','IC / Passport','Email Address',
     'Admission Form Status','V2 Admission Reference','Admission Form Submitted At','Match Method',
-    'Reminder 1 Sent At','Reminder 2 Sent At','Final Reminder Sent At','Last Reminder Sent At',
-    'Next Reminder Due','Follow-Up Status','Reminder Override','Follow-Up Notes','Last Checked At'
+    ...cfg.reminderHeaders,
+    'Last Reminder Sent At','Next Reminder Due','Follow-Up Status','Reminder Override','Follow-Up Notes','Last Checked At'
   ];
   required.forEach(x => { if (h[x] == null) throw new Error('Missing marketing column: ' + x); });
 
@@ -65,15 +68,11 @@ function marketingSyncAdmissionFormStatus() {
 
   const now = new Date();
   let completed = 0, pending = 0, review = 0;
-  const output = [];
 
   for (let r = 1; r < regValues.length; r++) {
     const row = regValues[r];
     const ref = String(row[h['Registration Reference']] || '').trim();
-    if (!ref) {
-      output.push(new Array(13).fill(''));
-      continue;
-    }
+    if (!ref) continue;
 
     const regName = normalizeName_(row[h['Full Name']]);
     const regId = normalizeId_(row[h['IC / Passport']]);
@@ -102,11 +101,9 @@ function marketingSyncAdmissionFormStatus() {
       }
     }
 
-    const r1 = row[h['Reminder 1 Sent At']] || '';
-    const r2 = row[h['Reminder 2 Sent At']] || '';
-    const rf = row[h['Final Reminder Sent At']] || '';
-    const last = row[h['Last Reminder Sent At']] || '';
     const registeredAt = parseDate_(row[h['Timestamp']]);
+    const sentValues = cfg.reminderHeaders.map(k => row[h[k]] || '');
+    const nextStage = getNextReminderStage_(sentValues);
     let nextDue = '';
     let followUp = '';
 
@@ -121,35 +118,23 @@ function marketingSyncAdmissionFormStatus() {
       pending++;
     } else {
       pending++;
-      if (registeredAt) {
-        if (!r1) nextDue = addDays_(registeredAt, cfg.reminderDays[0]);
-        else if (!r2) nextDue = addDays_(registeredAt, cfg.reminderDays[1]);
-        else if (!rf) nextDue = addDays_(registeredAt, cfg.reminderDays[2]);
-      }
-      if (rf) followUp = 'FINAL SENT';
+      if (registeredAt && nextStage) nextDue = addHours_(registeredAt, cfg.reminderScheduleHours[nextStage - 1]);
+      if (!nextStage) followUp = 'FINAL SENT';
       else if (nextDue && now >= nextDue) followUp = 'DUE';
       else followUp = 'SCHEDULED';
     }
 
-    output.push([
-      status,
-      matched ? matched.ref : '',
-      matched ? matched.submittedAt : '',
-      matchMethod,
-      r1,
-      r2,
-      rf,
-      last,
-      nextDue,
-      followUp,
-      row[h['Reminder Override']] || '',
-      row[h['Follow-Up Notes']] || '',
-      now
-    ]);
+    const rowNo = r + 1;
+    sh.getRange(rowNo, h['Admission Form Status'] + 1).setValue(status);
+    sh.getRange(rowNo, h['V2 Admission Reference'] + 1).setValue(matched ? matched.ref : '');
+    sh.getRange(rowNo, h['Admission Form Submitted At'] + 1).setValue(matched ? matched.submittedAt : '');
+    sh.getRange(rowNo, h['Match Method'] + 1).setValue(matchMethod);
+    sh.getRange(rowNo, h['Next Reminder Due'] + 1).setValue(nextDue || '');
+    sh.getRange(rowNo, h['Follow-Up Status'] + 1).setValue(followUp);
+    sh.getRange(rowNo, h['Last Checked At'] + 1).setValue(now);
   }
 
-  if (output.length) sh.getRange(2, 21, output.length, 13).setValues(output);
-  return { checked: output.length, completed, pending, review };
+  return { checked: regValues.length - 1, completed, pending, review };
 }
 
 function marketingSendDueAdmissionFormReminders() {
@@ -163,9 +148,7 @@ function marketingSendDueAdmissionFormReminders() {
   lock.waitLock(30000);
   try {
     marketingSyncAdmissionFormStatus();
-
-    const ss = SpreadsheetApp.openById(cfg.briefingSpreadsheetId);
-    const sh = ss.getSheetByName(cfg.briefingSheetName);
+    const sh = SpreadsheetApp.openById(cfg.briefingSpreadsheetId).getSheetByName(cfg.briefingSheetName);
     const values = sh.getDataRange().getValues();
     const h = headerMap_(values[0]);
     const now = new Date();
@@ -173,26 +156,19 @@ function marketingSendDueAdmissionFormReminders() {
 
     for (let r = 1; r < values.length; r++) {
       const row = values[r];
-      const ref = String(row[h['Registration Reference']] || '').trim();
-      if (!ref) continue;
+      if (!String(row[h['Registration Reference']] || '').trim()) continue;
       if (String(row[h['Admission Form Status']] || '') !== 'PENDING') continue;
       if (String(row[h['Follow-Up Status']] || '') !== 'DUE') continue;
       if (String(row[h['Reminder Override']] || '').trim().toUpperCase() === 'SKIP REMINDERS') continue;
+      if (!normalizeEmail_(row[h['Email Address']])) continue;
 
-      const email = normalizeEmail_(row[h['Email Address']]);
-      if (!email) continue;
-
-      let stage = 1;
-      if (row[h['Reminder 1 Sent At']]) stage = 2;
-      if (row[h['Reminder 2 Sent At']]) stage = 3;
-      if (row[h['Final Reminder Sent At']]) continue;
+      const sentValues = cfg.reminderHeaders.map(k => row[h[k]] || '');
+      const stage = getNextReminderStage_(sentValues);
+      if (!stage) continue;
 
       sendMarketingAdmissionReminderEmail_(row, h, stage);
-
       const rowNo = r + 1;
-      if (stage === 1) sh.getRange(rowNo, h['Reminder 1 Sent At'] + 1).setValue(now);
-      if (stage === 2) sh.getRange(rowNo, h['Reminder 2 Sent At'] + 1).setValue(now);
-      if (stage === 3) sh.getRange(rowNo, h['Final Reminder Sent At'] + 1).setValue(now);
+      sh.getRange(rowNo, h[cfg.reminderHeaders[stage - 1]] + 1).setValue(now);
       sh.getRange(rowNo, h['Last Reminder Sent At'] + 1).setValue(now);
       sent++;
     }
@@ -211,18 +187,20 @@ function marketingSendReminderNowByReference(registrationReference) {
   const sh = SpreadsheetApp.openById(cfg.briefingSpreadsheetId).getSheetByName(cfg.briefingSheetName);
   const values = sh.getDataRange().getValues();
   const h = headerMap_(values[0]);
+
   for (let r = 1; r < values.length; r++) {
     const row = values[r];
     if (String(row[h['Registration Reference']] || '').trim() !== String(registrationReference).trim()) continue;
     if (String(row[h['Admission Form Status']] || '') === 'COMPLETED') return { sent: false, reason: 'already completed' };
     if (String(row[h['Admission Form Status']] || '') === 'REVIEW MATCH') return { sent: false, reason: 'review match first' };
-    const stage = row[h['Reminder 2 Sent At']] ? 3 : row[h['Reminder 1 Sent At']] ? 2 : 1;
+
+    const stage = getNextReminderStage_(cfg.reminderHeaders.map(k => row[h[k]] || ''));
+    if (!stage) return { sent: false, reason: 'all reminder stages already sent' };
+
     sendMarketingAdmissionReminderEmail_(row, h, stage);
     const now = new Date();
     const rowNo = r + 1;
-    if (stage === 1) sh.getRange(rowNo, h['Reminder 1 Sent At'] + 1).setValue(now);
-    if (stage === 2) sh.getRange(rowNo, h['Reminder 2 Sent At'] + 1).setValue(now);
-    if (stage === 3) sh.getRange(rowNo, h['Final Reminder Sent At'] + 1).setValue(now);
+    sh.getRange(rowNo, h[cfg.reminderHeaders[stage - 1]] + 1).setValue(now);
     sh.getRange(rowNo, h['Last Reminder Sent At'] + 1).setValue(now);
     marketingSyncAdmissionFormStatus();
     return { sent: true, stage };
@@ -234,7 +212,7 @@ function marketingInstallHourlyTrigger() {
   const fn = 'marketingSendDueAdmissionFormReminders';
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === fn).forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger(fn).timeBased().everyHours(1).create();
-  return 'Hourly trigger installed. Emails are restricted to 09:00–17:59 Malaysia time.';
+  return 'Hourly trigger installed. Due reminders are sent on the first hourly run during 09:00–17:59 Malaysia time.';
 }
 
 function sendMarketingAdmissionReminderEmail_(row, h, stage) {
@@ -246,26 +224,31 @@ function sendMarketingAdmissionReminderEmail_(row, h, stage) {
   const email = normalizeEmail_(row[h['Email Address']]);
 
   const subjects = {
-    1: 'Reminder: Complete Your IUC Admission Form',
-    2: 'Action Required: Complete Your IUC Admission Form',
-    3: 'Final Reminder: Complete Your IUC Admission Form'
+    1: 'Friendly Reminder: Complete Your IUC Admission Form',
+    2: 'Reminder: Complete Your IUC Admission Form',
+    3: 'Action Required: Complete Your IUC Admission Form',
+    4: 'Admission Follow-Up: Complete Your IUC Admission Form',
+    5: 'Final Reminder: Complete Your IUC Admission Form'
   };
-  const lead = stage === 1
-    ? 'This is a friendly reminder to complete your Official IUC Admission Form.'
-    : stage === 2
-      ? 'Our record still shows that your Official IUC Admission Form has not been completed.'
-      : 'This is our final automated reminder to complete your Official IUC Admission Form so we can proceed with your admission registration.';
+  const leads = {
+    1: 'A quick reminder to complete your Official IUC Admission Form so we can continue your registration process.',
+    2: 'Our record shows that your Official IUC Admission Form is still pending.',
+    3: 'Your registration has been received, but we are still waiting for your Official IUC Admission Form.',
+    4: 'We are following up again because your Official IUC Admission Form has not yet been completed.',
+    5: 'This is our final automated reminder to complete your Official IUC Admission Form so we can proceed with your admission registration.'
+  };
+  const timing = {1:'12-hour reminder',2:'24-hour reminder',3:'Day 3 reminder',4:'Day 5 reminder',5:'Day 7 final reminder'};
 
   const html = `<div style="margin:0;background:#f3f1f5;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#2a2a2a">
     <div style="max-width:620px;margin:auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8e3ec">
       <div style="background:#5b2c83;padding:28px 32px;color:#fff">
         <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#eadff1;font-weight:700">IPGS Registry</div>
-        <div style="font-size:26px;line-height:1.25;font-weight:700;margin-top:8px">${stage === 3 ? 'Final Admission Form Reminder' : 'Complete Your IUC Admission Form'}</div>
-        <div style="font-size:14px;line-height:1.55;color:#eadff1;margin-top:8px">Your registration is already in our record.</div>
+        <div style="font-size:26px;line-height:1.25;font-weight:700;margin-top:8px">${stage === 5 ? 'Final Admission Form Reminder' : 'Complete Your IUC Admission Form'}</div>
+        <div style="font-size:14px;line-height:1.55;color:#eadff1;margin-top:8px">${timing[stage]} · Your briefing registration is already in our record.</div>
       </div>
       <div style="padding:30px 32px">
         <p style="font-size:15px;line-height:1.7;margin-top:0">Dear <strong>${name}</strong>,</p>
-        <p style="font-size:15px;line-height:1.7">${lead}</p>
+        <p style="font-size:15px;line-height:1.7">${leads[stage]}</p>
         <div style="background:#f4eef8;border-left:4px solid #5b2c83;border-radius:8px;padding:16px 18px;margin:22px 0;font-size:14px;line-height:1.7">
           <strong>${programme}</strong><br>Intended intake: <strong>${intake}</strong>
         </div>
@@ -273,15 +256,15 @@ function sendMarketingAdmissionReminderEmail_(row, h, stage) {
         <div style="text-align:center;margin:26px 0 28px">
           <a href="${cfg.admissionFormUrl}" style="display:inline-block;background:#5b2c83;color:#fff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:16px;font-weight:700">Complete Admission Form →</a>
         </div>
-        <p style="font-size:13px;line-height:1.65;color:#666">If you have already submitted the Admission Form recently, you may disregard this email. Our system will automatically stop reminders once your submission is matched.</p>
+        <p style="font-size:13px;line-height:1.65;color:#666">If you have already submitted the Admission Form recently, you may disregard this email. Our system will automatically stop future reminders once your submission is matched.</p>
         <p style="margin-top:24px;font-size:14px;line-height:1.6">Warm regards,<br><strong>IPGS Registry</strong><br>Institute of Postgraduate Studies<br>Innovative University College</p>
-        <p style="font-size:11px;color:#999;margin-top:20px">Briefing registration reference: ${ref} · Automated follow-up email.</p>
+        <p style="font-size:11px;color:#999;margin-top:20px">Briefing registration reference: ${ref} · Automated marketing follow-up email.</p>
       </div>
       <div style="background:#2f1b3d;padding:16px 24px;text-align:center;color:#d8cfe0;font-size:11px;line-height:1.6">Innovative University College · Institute of Postgraduate Studies</div>
     </div>
   </div>`;
 
-  const text = `Dear ${row[h['Full Name']]},\n\n${lead}\n\nProgramme: ${row[h['Programme']]}\nIntended intake: ${row[h['Preferred Intake']]}\n\nComplete Admission Form: ${cfg.admissionFormUrl}\n\nIf you have already submitted the form recently, you may disregard this email.\n\nIPGS Registry\nInnovative University College`;
+  const text = `Dear ${row[h['Full Name']]},\n\n${leads[stage]}\n\nProgramme: ${row[h['Programme']]}\nIntended intake: ${row[h['Preferred Intake']]}\n\nComplete Admission Form: ${cfg.admissionFormUrl}\n\nIf you have already submitted the form recently, you may disregard this email.\n\nIPGS Registry\nInnovative University College`;
 
   MailApp.sendEmail({
     to: email,
@@ -291,6 +274,11 @@ function sendMarketingAdmissionReminderEmail_(row, h, stage) {
     replyTo: cfg.replyTo,
     name: cfg.senderName
   });
+}
+
+function getNextReminderStage_(sentValues) {
+  for (let i = 0; i < sentValues.length; i++) if (!sentValues[i]) return i + 1;
+  return null;
 }
 
 function headerMap_(headers) {
@@ -322,8 +310,8 @@ function parseDate_(v) {
   return null;
 }
 
-function addDays_(d, days) {
-  return new Date(d.getTime() + Number(days) * 24 * 60 * 60 * 1000);
+function addHours_(d, hours) {
+  return new Date(d.getTime() + Number(hours) * 60 * 60 * 1000);
 }
 
 function escapeHtml_(v) {
