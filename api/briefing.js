@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8Gw3rJlPqWXeqK2rRlTBM4AOKEi1MWAzc8p7OiGE7uBdT3fhJqTur5WoerbnolBE/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-3lUfLrIpwtHxSH70z8WcW9kb_SBHbe1ohBYToMfz8ybA3NUtOVmLUVKIlSakODw/exec';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
