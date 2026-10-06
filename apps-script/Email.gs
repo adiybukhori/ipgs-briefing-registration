@@ -5,16 +5,7 @@ function sendColEmail_(p,duration,pdf,ref){
  const NOV_WHATSAPP='https://chat.whatsapp.com/LTVvdXPBFVuEDxiFCNbuHN';
  const JAN_WHATSAPP='https://chat.whatsapp.com/K3bhaOH5edAAvb6Wls7m25';
 
- let headerBlob=null;
- try{
-  headerBlob=UrlFetchApp.fetch(HEADER_URL,{muteHttpExceptions:false}).getBlob().setName('IUC-IPGS-Header.jpg');
- }catch(err){
-  console.warn('Unable to load email header: '+err);
- }
-
- const brandHeader=headerBlob
-  ? `<div style="background:#ffffff;padding:0;text-align:center"><img src="cid:ipgsHeader" alt="Innovative University College | Institute of Postgraduate Studies" style="display:block;width:100%;max-width:700px;height:auto;border:0;margin:0 auto"></div>`
-  : `<div style="background:#ffffff;padding:20px 28px;text-align:center;border-bottom:1px solid #eee"><div style="font-size:18px;font-weight:800;color:#5b2c83">Innovative University College</div><div style="font-size:12px;letter-spacing:1px;color:#766581;margin-top:4px">INSTITUTE OF POSTGRADUATE STUDIES</div></div>`;
+ const brandHeader=`<div style="background:#ffffff;padding:0;margin:0;text-align:center;line-height:0;font-size:0"><img src="${HEADER_URL}" alt="Innovative University College | Institute of Postgraduate Studies" width="700" style="display:block;width:100%;max-width:700px;height:auto;border:0;outline:none;text-decoration:none;margin:0 auto"></div>`;
 
  const html=`<!doctype html><html><body style="margin:0;padding:0;background:#f3f1f5;font-family:Arial,Helvetica,sans-serif;color:#2a2a2a">
  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f1f5;padding:28px 10px"><tr><td align="center">
@@ -49,7 +40,7 @@ function sendColEmail_(p,duration,pdf,ref){
 
    <div style="margin:28px 0 0;border-top:1px solid #e5e7eb;padding-top:22px"><div style="font-size:17px;font-weight:800;color:#5b2c83;margin-bottom:10px">Your admission journey</div><div style="font-size:14px;line-height:1.9;color:#475467">1. Complete Admission Form<br>2. Admission Screening<br>3. Admission Endorsement<br>4. Orientation<br>5. Start Your Class</div></div>
    <p style="font-size:13px;line-height:1.6;color:#667085;margin-top:20px">Depending on the admission screening outcome, additional assessment or academic requirements may apply before final admission.</p>
-   <div style="background:#fff8e8;border:1px solid #f2dfad;border-radius:10px;padding:16px;margin-top:22px;font-size:14px;line-height:1.7"><strong>Need assistance?</strong><br>En. Saiful Nizam<br>+60 17-870 8296</div>
+   <div style="background:#fff8e8;border:1px solid #f2dfad;border-radius:10px;padding:16px;margin-top:22px;font-size:14px;line-height:1.7"><strong>Need assistance?</strong><br><span style="display:inline-block;margin-top:3px">En. Saiful Nizam</span><br><a href="https://wa.me/60178708296" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;padding:8px 12px;border-radius:7px;font-size:12px;font-weight:700;margin-top:9px">WhatsApp En. Saiful</a></div>
    <p style="font-size:14px;line-height:1.7;margin-top:26px">We look forward to welcoming you as part of the <strong>IUC postgraduate community</strong>.</p>
    <p style="font-size:14px;line-height:1.55;margin-top:22px">Warm regards,<br><strong>IPGS Registry</strong><br>Institute of Postgraduate Studies<br>Innovative University College</p>
    <p style="font-size:11px;color:#98a2b3;margin-top:20px">Registration reference: ${esc(ref)} · This is a computer-generated email. No signature is required.</p>
@@ -67,7 +58,6 @@ function sendColEmail_(p,duration,pdf,ref){
   replyTo:ADMISSION_SENDER,
   name:'IPGS Admission'
  };
- if(headerBlob) options.inlineImages={ipgsHeader:headerBlob};
  try{
   const aliases=GmailApp.getAliases();
   if(aliases.indexOf(ADMISSION_SENDER)!==-1) options.from=ADMISSION_SENDER;
