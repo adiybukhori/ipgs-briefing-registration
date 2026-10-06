@@ -1,6 +1,7 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-3lUfLrIpwtHxSH70z8WcW9kb_SBHbe1ohBYToMfz8ybA3NUtOVmLUVKIlSakODw/exec';
 
 export default async function handler(req, res) {
+  res.setHeader('X-Briefing-Proxy-Version', '20261006-current-backend');
   if (req.method === 'GET') {
     try {
       const r = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
