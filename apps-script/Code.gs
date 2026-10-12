@@ -1,4 +1,6 @@
 const ROOT_FOLDER_ID='1vUYgkLM9NjZTjJKP1CHegrx8Zd1cE1_0';
+const BRIEFING_SHEET_ID='1BBrA7RDKDHCek02aIr4XBShZ4X91KvyZfyy-lBPlAP8';
+const BRIEFING_SHEET_NAME='IPGS Briefing Registration';
 
 // Same COL template used by the existing Trio automation.
 const TEMPLATE_DOC_ID='1q9cji_T_XDa5OMM5u_S0UYrQviX8h8H0iAZL9MKj7ec';
@@ -71,7 +73,7 @@ function completeRegistration_(p){
  const offers=folder.createFolder('02_Offer_Letter');
 
  const bytes=Utilities.base64Decode(String(p.receiptBase64).replace(/^data:[^,]+,/,''));
- docs.createFile(Utilities.newBlob(bytes,p.receiptMime||'application/octet-stream','PAYMENT_RECEIPT_'+p.receiptName));
+ const receiptFile=docs.createFile(Utilities.newBlob(bytes,p.receiptMime||'application/octet-stream','PAYMENT_RECEIPT_'+p.receiptName));
 
  const duration=getDuration_(p.programme);
  const issueDate=Utilities.formatDate(new Date(),'GMT+8','dd MMMM yyyy');
@@ -95,10 +97,58 @@ function completeRegistration_(p){
  const pdf=offers.createFile(copy.getAs(MimeType.PDF)).setName('COL_'+safe+'_'+p.ic+'.pdf');
  copy.setTrashed(true);
 
+ // Persist the application before emailing: a Sheet failure must not silently send a COL.
+ const registrationRow=saveBriefingRegistrationRow_(p,ref,receiptFile.getUrl(),pdf.getUrl());
  sendColEmail_(p,duration,pdf,ref);
  props.setProperty(key,ref);
+ try{
+  SpreadsheetApp.openById(BRIEFING_SHEET_ID).getSheetByName(BRIEFING_SHEET_NAME)
+   .getRange(registrationRow,21).setValue('COL Issued & Emailed');
+ }catch(statusError){
+  console.error('Registration saved and COL emailed, but status update failed: '+statusError);
+ }
 
  return {ok:true,success:true,reference:ref,colUrl:pdf.getUrl()};
+}
+
+
+/**
+ * Store one 22-column response in the official briefing response tab.
+ * On retry, update the same IC+email row rather than creating duplicate records.
+ * A pending row is retained if email dispatch subsequently fails.
+ */
+function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
+ const sheet=SpreadsheetApp.openById(BRIEFING_SHEET_ID).getSheetByName(BRIEFING_SHEET_NAME);
+ if(!sheet) throw new Error('Briefing Registration sheet not found');
+ const last=sheet.getLastRow();
+ let row=last+1;
+ if(last>1){
+  const idEmails=sheet.getRange(2,4,last-1,3).getDisplayValues();
+  const match=idEmails.findIndex(x=>
+   String(x[0]).trim()===String(p.ic).trim() &&
+   String(x[2]).trim().toLowerCase()===String(p.email).trim().toLowerCase());
+  if(match>=0) row=match+2;
+ }
+ const existingTimestamp=row<=last?sheet.getRange(row,1).getDisplayValue():'';
+ const timestamp=existingTimestamp||Utilities.formatDate(new Date(),'Asia/Kuching','dd/MM/yyyy HH:mm:ss');
+ const plain=s=>{
+  const v=String(s==null?'':s);
+  return /^\s*=/.test(v)?"'"+v:v;
+ };
+ const link=(url,label)=>'=HYPERLINK("'+String(url).replace(/"/g,'""')+'","'+label+'")';
+ const data=[
+  timestamp,ref,plain(p.fullName),plain(p.ic),plain(p.phone),plain(p.email),
+  plain(p.address),plain(p.programme),plain(p.intake),plain(p.studyMode||'Full Time'),
+  plain(p.paymentMethod),'Receipt Submitted',link(receiptUrl,'View Receipt'),
+  plain(p.source),plain(p.campaign),plain(p.utmSource),plain(p.utmMedium),
+  plain(p.utmCampaign),plain(p.applicantType),plain(p.country),
+  'COL Generated - Email Pending',link(colUrl,'View COL')
+ ];
+ sheet.getRange(row,2).setNumberFormat('@');
+ sheet.getRange(row,4,1,2).setNumberFormat('@');
+ sheet.getRange(row,1,1,22).setValues([data]);
+ SpreadsheetApp.flush();
+ return row;
 }
 
 function getDuration_(programme){
