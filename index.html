@@ -105,6 +105,12 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
     <select id="intake" required><option value="">Select intake</option><option>November 2026</option><option>January 2027</option><option>Next Available Intake</option></select>
   </div>
 </div>
+<div class="span" style="margin-top:12px">
+  <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;line-height:1.5;font-weight:500">
+    <input id="whatsappConsent" type="checkbox" style="width:18px;height:18px;flex:0 0 18px;margin-top:2px;accent-color:#5b2c83">
+    <span>I agree to receive WhatsApp messages from IPGS, Innovative University College, about my registration, the next admission steps and related follow-ups. I can opt out at any time. <em>(Optional)</em></span>
+  </label>
+</div>
 <div class="actions"><div class="micro">Your registration is only completed after the payment receipt is submitted.</div><button class="btn primary">Continue to payment →</button></div>
 </form>
 </div>
@@ -182,6 +188,8 @@ $('form').onsubmit=e=>{
   state.fullName=$('name').value.trim();
   state.icPassport=$('ic').value.trim();
   state.whatsapp=$('phone').value.trim();
+  state.whatsappConsent=$('whatsappConsent').checked;
+  state.whatsappConsentVersion='ipgs-whatsapp-consent-v1-2026-10-30';
   state.email=$('email').value.trim();
   state.fullAddress=$('address').value.trim();
   state.applicantType=$('applicantType').value;
