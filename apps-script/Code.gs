@@ -151,11 +151,13 @@ function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
  sheet.getRange(row,2).setNumberFormat('@');
  sheet.getRange(row,4,1,2).setNumberFormat('@');
  sheet.getRange(row,1,1,22).setValues([data]);
- // Keep the existing 22-column registration schema unchanged. Column W stores evidence.
- if(sheet.getMaxColumns()<23)sheet.insertColumnsAfter(sheet.getMaxColumns(),23-sheet.getMaxColumns());
- if(!sheet.getRange(1,23).getDisplayValue())sheet.getRange(1,23).setValue('WhatsApp & Email Contact Consent');
+ // Preserve existing column W ('Remarks'). Consent evidence uses NEW column X only.
+ if(sheet.getMaxColumns()<24)sheet.insertColumnsAfter(sheet.getMaxColumns(),24-sheet.getMaxColumns());
+ const consentHeader=sheet.getRange(1,24).getDisplayValue();
+ if(consentHeader && consentHeader!=='WhatsApp & Email Contact Consent')throw Error('Consent evidence column X has a conflicting header');
+ if(!consentHeader)sheet.getRange(1,24).setValue('WhatsApp & Email Contact Consent');
  const evidence='GRANTED | channels:WhatsApp,email | version:'+p.contactConsentVersion.slice(0,90)+' | recorded:'+p.contactConsentCapturedAt.slice(0,40);
- sheet.getRange(row,23).setValue(evidence);
+ sheet.getRange(row,24).setValue(evidence);
  SpreadsheetApp.flush();
  return row;
 }
