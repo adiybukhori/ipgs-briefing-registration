@@ -36,7 +36,7 @@ async function submit({ duplicate = false, consent = true, webhookOk = true } = 
     fullName: 'Test Student', ic: 'TEST-ID', phone: '+601100000000',
     email: 'test@example.invalid', programme: 'MBA', intake: 'Jan 2027',
     receiptBase64: 'TEST_RECEIPT_BINARY_NEVER_FORWARD',
-    whatsappConsent: consent
+    whatsappConsent: consent, contactConsent: consent
   } }, res);
   return { res, calls };
 }
@@ -73,6 +73,24 @@ test('DANIA webhook outage never turns a successful registration into a failure'
   assert.equal(res.code, 200);
   assert.equal(res.data.success, true);
   assert.equal(calls.length, 3);
+});
+
+
+test('required combined contact consent cannot be bypassed by direct POST', async () => {
+  const calls = [];
+  globalThis.fetch = async (...args) => { calls.push(args); return { ok: true }; };
+  const res = fakeResponse();
+  await handler({method:'POST', body: {fullName: 'No Consent', whatsappConsent: true, contactConsent: false}}, res);
+  assert.equal(res.code, 400);
+  assert.equal(calls.length, 0);
+});
+
+test('successful submission sends combined channel consent to Apps Script', async () => {
+  const { calls } = await submit();
+  const payload = JSON.parse(calls[0].options.body);
+  assert.equal(payload.contactConsent, true);
+  assert.equal(payload.contactConsentVersion, 'ipgs-contact-consent-whatsapp-email-v2-2026-11-01');
+  assert.ok(Number.isFinite(Date.parse(payload.contactConsentCapturedAt)));
 });
 
 process.on('exit', () => {
