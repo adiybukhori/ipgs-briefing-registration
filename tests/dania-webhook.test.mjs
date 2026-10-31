@@ -63,9 +63,10 @@ test('duplicate registration never re-emits a first-contact event', async () => 
   assert.equal(calls.length, 1);
 });
 
-test('unchecked consent is communicated as false for HOLD decisions', async () => {
-  const { calls } = await submit({ consent: false });
-  assert.equal(JSON.parse(calls[1].options.body).whatsapp_consent, false);
+test('unchecked consent is blocked before any backend request', async () => {
+  const { res, calls } = await submit({ consent: false });
+  assert.equal(res.code, 400);
+  assert.equal(calls.length, 0);
 });
 
 test('DANIA webhook outage never turns a successful registration into a failure', async () => {
