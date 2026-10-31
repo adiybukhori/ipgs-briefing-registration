@@ -52,11 +52,15 @@ function normalizePayload_(raw){
   utmCampaign:raw.utmCampaign||'',
   receiptBase64:raw.receiptBase64||receipt.base64||'',
   receiptName:raw.receiptName||receipt.fileName||'receipt',
+  contactConsent:raw.contactConsent===true,
+  contactConsentVersion:String(raw.contactConsentVersion||''),
+  contactConsentCapturedAt:String(raw.contactConsentCapturedAt||''),
   receiptMime:raw.receiptMime||receipt.mimeType||'application/octet-stream'
  };
 }
 
 function completeRegistration_(p){
+ if(p.contactConsent!==true)throw Error('WhatsApp and email contact consent is required');
  ['fullName','ic','phone','email','address','programme','intake','paymentMethod','receiptBase64','receiptName']
   .forEach(k=>{if(!p[k])throw new Error('Missing '+k)});
 
@@ -147,6 +151,11 @@ function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
  sheet.getRange(row,2).setNumberFormat('@');
  sheet.getRange(row,4,1,2).setNumberFormat('@');
  sheet.getRange(row,1,1,22).setValues([data]);
+ // Keep the existing 22-column registration schema unchanged. Column W stores evidence.
+ if(sheet.getMaxColumns()<23)sheet.insertColumnsAfter(sheet.getMaxColumns(),23-sheet.getMaxColumns());
+ if(!sheet.getRange(1,23).getDisplayValue())sheet.getRange(1,23).setValue('WhatsApp & Email Contact Consent');
+ const evidence='GRANTED | channels:WhatsApp,email | version:'+p.contactConsentVersion.slice(0,90)+' | recorded:'+p.contactConsentCapturedAt.slice(0,40);
+ sheet.getRange(row,23).setValue(evidence);
  SpreadsheetApp.flush();
  return row;
 }
