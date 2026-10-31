@@ -27,7 +27,7 @@ async function notifyDaniaAfterSuccessfulRegistration(applicant, backendResult) 
     email_status: 'send_function_completed_delivery_unverified',
     whatsapp_consent: applicant.whatsappConsent === true,
     whatsapp_consent_version: applicant.whatsappConsent === true
-      ? 'ipgs-whatsapp-consent-v1-2026-10-30' : null,
+      ? 'ipgs-contact-consent-whatsapp-email-v2-2026-11-01' : null,
     applicant: {
       full_name: String(applicant.fullName || '').trim(),
       ic_passport: String(applicant.ic || '').trim(),
@@ -88,10 +88,17 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
+    // Reject bypassed front-end consent checks; this covers both WhatsApp and email.
+    if (body.contactConsent !== true || body.whatsappConsent !== true) {
+      return res.status(400).json({ success: false, message: 'Please tick the required WhatsApp and email contact permission before submitting.' });
+    }
     const receipt = body.receipt || {};
 
     const payload = {
       action: 'complete',
+      contactConsent: true,
+      contactConsentVersion: 'ipgs-contact-consent-whatsapp-email-v2-2026-11-01',
+      contactConsentCapturedAt: new Date().toISOString(),
       fullName: body.fullName || '',
       ic: body.ic || body.icPassport || '',
       phone: body.phone || body.whatsapp || '',
@@ -130,7 +137,7 @@ export default async function handler(req, res) {
 
     const success = data.success === true || data.ok === true;
     if (success) {
-      await notifyDaniaAfterSuccessfulRegistration({ ...payload, whatsappConsent: body.whatsappConsent === true }, data);
+      await notifyDaniaAfterSuccessfulRegistration({ ...payload, whatsappConsent: true }, data);
     }
     return res.status(success ? 200 : 400).json({
       ...data,
