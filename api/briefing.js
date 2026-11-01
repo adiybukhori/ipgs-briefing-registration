@@ -1,3 +1,4 @@
+// Production notification now uses the authenticated ACC relay outbox.
 import { createHmac } from 'node:crypto';
 
 // DANIA integration is opt-in at deployment level: no network call without BOTH secrets.
