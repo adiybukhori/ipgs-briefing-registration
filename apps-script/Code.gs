@@ -107,7 +107,7 @@ function completeRegistration_(p){
  props.setProperty(key,ref);
  try{
   SpreadsheetApp.openById(BRIEFING_SHEET_ID).getSheetByName(BRIEFING_SHEET_NAME)
-   .getRange(registrationRow,21).setValue('COL Issued & Emailed');
+   .getRange(registrationRow,22).setValue('COL Issued & Emailed');
  }catch(statusError){
   console.error('Registration saved and COL emailed, but status update failed: '+statusError);
  }
@@ -117,7 +117,7 @@ function completeRegistration_(p){
 
 
 /**
- * Store one 22-column response in the official briefing response tab.
+ * Store one 23-column response in the official briefing response tab.
  * On retry, update the same IC+email row rather than creating duplicate records.
  * A pending row is retained if email dispatch subsequently fails.
  */
@@ -143,14 +143,14 @@ function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
  const data=[
   timestamp,ref,plain(p.fullName),plain(p.ic),plain(p.phone),plain(p.email),
   plain(p.address),plain(p.programme),plain(p.intake),plain(p.studyMode||'Full Time'),
-  plain(p.paymentMethod),'Receipt Submitted',link(receiptUrl,'View Receipt'),
+  plain(p.paymentMethod),'Receipt Submitted',link(receiptUrl,'View Receipt'),'',
   plain(p.source),plain(p.campaign),plain(p.utmSource),plain(p.utmMedium),
   plain(p.utmCampaign),plain(p.applicantType),plain(p.country),
   'COL Generated - Email Pending',link(colUrl,'View COL')
  ];
  sheet.getRange(row,2).setNumberFormat('@');
  sheet.getRange(row,4,1,2).setNumberFormat('@');
- sheet.getRange(row,1,1,22).setValues([data]);
+ sheet.getRange(row,1,1,23).setValues([data]);
  // Preserve existing column W ('Remarks'). Consent evidence uses NEW column X only.
  if(sheet.getMaxColumns()<24)sheet.insertColumnsAfter(sheet.getMaxColumns(),24-sheet.getMaxColumns());
  const consentHeader=sheet.getRange(1,24).getDisplayValue();
@@ -159,6 +159,11 @@ function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
  const evidence='GRANTED | channels:WhatsApp,email | version:'+p.contactConsentVersion.slice(0,90)+' | recorded:'+p.contactConsentCapturedAt.slice(0,40);
  sheet.getRange(row,24).setValue(evidence);
  SpreadsheetApp.flush();
+ // Preserve live registration read-back verification before accepting the submission.
+ const checked=sheet.getRange(row,1,1,23).getDisplayValues()[0];
+ if(String(checked[1]).trim()!==String(ref).trim() ||
+    String(checked[2]).trim()!==String(p.fullName).trim() ||
+    String(checked[3]).trim()!==String(p.ic).trim()) throw new Error('Registration Sheet verification failed');
  return row;
 }
 
