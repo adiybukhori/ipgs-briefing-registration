@@ -94,6 +94,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Please tick the required WhatsApp and email contact permission before submitting.' });
     }
     const receipt = body.receipt || {};
+    const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
+    const ids = Array.isArray(body.identityDocuments) ? body.identityDocuments : [];
+    const requiredIdCount = body.applicantType === 'Local' ? 2 : body.applicantType === 'International' ? 1 : 0;
+    if (!String(body.qualification || '').trim() || !String(body.awardingInstitution || '').trim() || !requiredIdCount || ids.length !== requiredIdCount ||
+        ids.some(item => !item || !allowed.includes(item.mimeType) || !item.base64)) {
+      return res.status(400).json({success:false, message:'Please complete your qualification, awarding institution and identity document(s).'});
+    }
+    if (![receipt, ...ids].every(item => allowed.includes(item.mimeType) && item.base64 && Number(item.size) > 0) ||
+        [receipt, ...ids].reduce((total,item)=>total + Number(item.size || 0), 0) > 3 * 1024 * 1024) {
+      return res.status(400).json({success:false, message:'Upload valid files with a combined size of 3 MB or less.'});
+    }
 
     const payload = {
       action: 'complete',
