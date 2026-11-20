@@ -35,7 +35,9 @@ async function submit({ duplicate = false, consent = true, webhookOk = true } = 
   await handler({ method: 'POST', body: {
     fullName: 'Test Student', ic: 'TEST-ID', phone: '+601100000000',
     email: 'test@example.invalid', programme: 'MBA', intake: 'Jan 2027',
-    receiptBase64: 'TEST_RECEIPT_BINARY_NEVER_FORWARD',
+    applicantType:'Local', qualification:'Master’s Degree', awardingInstitution:'Universiti Malaya',
+    identityDocuments:[{mimeType:'application/pdf',size:8,base64:'SUQ='},{mimeType:'application/pdf',size:8,base64:'SUQ='}],
+    receipt:{mimeType:'application/pdf',size:8,base64:'TEST_RECEIPT_BINARY_NEVER_FORWARD'},
     whatsappConsent: consent, contactConsent: consent
   } }, res);
   return { res, calls };
