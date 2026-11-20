@@ -102,7 +102,7 @@ textarea{min-height:90px;resize:vertical}.hint{font-size:11px;color:#8a8d92;marg
     <div class="note"><strong>Registration fee is required at the next step.</strong> Payment details will be shown and you will need to upload the receipt before registration is completed.</div>
   </div>
   <div class="span"><label>Preferred Intake <span class="req">*</span></label>
-    <select id="intake" required><option value="">Select intake</option><option>November 2026</option><option>January 2027</option><option>Next Available Intake</option></select>
+    <select id="intake" required><option value="">Select programme first</option></select>
   </div>
 </div>
 <div class="span" style="margin-top:12px">
@@ -180,6 +180,20 @@ function syncApplicantFields(){
   $('idLabelText').textContent=isInternational?'Passport Number':type==='Local'?'IC Number':'IC / Passport Number';
   $('ic').placeholder=isInternational?'Enter passport number':type==='Local'?'Enter IC number':'IC / Passport Number';
 }
+function syncIntakeWithProgramme(){
+  const programme=$('programme').value;
+  const intake=$('intake');
+  const isPhD=programme==='Doctor of Philosophy (PhD) in Management';
+  const selectedIntake=isPhD?'February 2027':'January 2027';
+  intake.replaceChildren();
+  const option=document.createElement('option');
+  option.value=programme?selectedIntake:'';
+  option.textContent=programme?selectedIntake:'Select programme first';
+  intake.appendChild(option);
+  intake.disabled=!programme;
+}
+$('programme').addEventListener('change',syncIntakeWithProgramme);
+syncIntakeWithProgramme();
 $('applicantType').addEventListener('change',syncApplicantFields);
 syncApplicantFields();
 $('form').onsubmit=e=>{
