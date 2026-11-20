@@ -45,6 +45,9 @@ function normalizePayload_(raw){
   applicantType:raw.applicantType||'',
   country:raw.country||'',
   studyMode:raw.studyMode||'Full Time',
+  qualification:String(raw.qualification||'').trim(),
+  awardingInstitution:String(raw.awardingInstitution||'').trim(),
+  identityDocuments:Array.isArray(raw.identityDocuments)?raw.identityDocuments:[],
   source:raw.source||'',
   campaign:raw.campaign||'',
   utmSource:raw.utmSource||'',
@@ -76,6 +79,14 @@ function completeRegistration_(p){
  const docs=folder.createFolder('01_Application_Documents');
  const offers=folder.createFolder('02_Offer_Letter');
 
+ const identityUrls=p.identityDocuments.map(function(item,index){
+  const mime=String(item.mimeType||'');
+  if(['image/jpeg','image/png','image/webp','application/pdf'].indexOf(mime)<0||!item.base64)throw new Error('Invalid identity document');
+  const identityBytes=Utilities.base64Decode(String(item.base64).replace(/^data:[^,]+,/,''));
+  const identityName='IDENTITY_'+(index===0?'FRONT_OR_PASSPORT_':'BACK_')+String(item.fileName||'document').replace(/[^A-Za-z0-9._-]/g,'_');
+  return docs.createFile(Utilities.newBlob(identityBytes,mime,identityName)).getUrl();
+ });
+ p.identityUrls=identityUrls;
  const bytes=Utilities.base64Decode(String(p.receiptBase64).replace(/^data:[^,]+,/,''));
  const receiptFile=docs.createFile(Utilities.newBlob(bytes,p.receiptMime||'application/octet-stream','PAYMENT_RECEIPT_'+p.receiptName));
 
@@ -153,6 +164,10 @@ function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
  sheet.getRange(row,1,1,23).setValues([data]);
  // Preserve existing column W ('Remarks'). Consent evidence uses NEW column X only.
  if(sheet.getMaxColumns()<24)sheet.insertColumnsAfter(sheet.getMaxColumns(),24-sheet.getMaxColumns());
+ const extraHeaders=['Highest Qualification','Awarding Institution','Identity Document 1','Identity Document 2'];
+ if(sheet.getMaxColumns()<28)sheet.insertColumnsAfter(sheet.getMaxColumns(),28-sheet.getMaxColumns());
+ extraHeaders.forEach((header,i)=>{const cell=sheet.getRange(1,25+i);const existing=cell.getDisplayValue();if(existing&&existing!==header)throw Error('Conflicting header in column '+(25+i));if(!existing)cell.setValue(header);});
+ sheet.getRange(row,25,1,4).setValues([[plain(p.qualification),plain(p.awardingInstitution),p.identityUrls&&p.identityUrls[0]?link(p.identityUrls[0],'View identity document'):'',p.identityUrls&&p.identityUrls[1]?link(p.identityUrls[1],'View identity document'):'']]);
  const consentHeader=sheet.getRange(1,24).getDisplayValue();
  if(consentHeader && consentHeader!=='WhatsApp & Email Contact Consent')throw Error('Consent evidence column X has a conflicting header');
  if(!consentHeader)sheet.getRange(1,24).setValue('WhatsApp & Email Contact Consent');
