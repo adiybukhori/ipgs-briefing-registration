@@ -168,7 +168,9 @@ function saveBriefingRegistrationRow_(p,ref,receiptUrl,colUrl){
 }
 
 function getDuration_(programme){
- const p=String(programme||'').toLowerCase();
+ const p=String(programme||'').trim().toLowerCase();
+ if(p==='master in education (medu)' || p==='master in education' || p==='master of education' || p==='master of education (medu)' || p==='medu')return '1 Year';
+ if(p==='postgraduate diploma in teaching (pgdt)' || p==='postgraduate diploma in teaching' || p==='pgdt' || p==='diploma perguruan lepasan ijazah (dpli)' || p==='dpli')return '1 Year';
  if(p.includes('doctor'))return '3 Years';
  if(p.includes('master'))return '1 Year';
  return '';
